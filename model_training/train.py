@@ -1,7 +1,10 @@
 import os
 import numpy as np
 from PIL import Image
+import cv2
 from ultralytics import YOLO
+from ultralytics.solutions import distance_calculation
+from ultralytics.utils.plotting import Annotator  # ultralytics.yolo.utils.plotting is deprecated
 
 def preTrain():
     # Downloading the weights    
@@ -30,28 +33,44 @@ def results():
         plt.figure(figsize=(20,10))
         plt.imshow(image)
         plt.show()
-    
-def predict():
-    best_path='runs/detect/train5/weights/best.pt'
-    source='../datasets/test'
-    save_dir = 'predicted_images'
-    
-    model = YOLO(best_path)
-    results = model.predict(source=source, show=True, save_dir=save_dir) # Display preds. Accepts all YOLO predict arguments
-    
+
 def track():
-    best_path='runs/detect/train4/weights/best.pt'
-    video = "test/test7.mp4"
-    #best_path='yolov8n.pt'
-    model = YOLO(best_path)
-    results = model.predict(source=0, show=True, tracker="bytetrack.yaml")
+    # Load the YOLO model
+    model = YOLO('yolov8n.pt')
+
+    # Initialize video capture from webcam
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 640)
+    cap.set(4, 480)
     
-    
+    while True:
+        _, img = cap.read()
+        
+        # BGR to RGB conversion is performed under the hood
+        # see: https://github.com/ultralytics/ultralytics/issues/2575
+        results = model.predict(img)
+
+        for r in results:
+            annotator = Annotator(img)
+            
+            boxes = r.boxes
+            for box in boxes:
+                b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
+                c = box.cls
+                annotator.box_label(b, model.names[int(c)], color='red')  # Change color to red
+          
+        img = annotator.result()  
+        cv2.imshow('Object Detection', img)     
+
+        if cv2.waitKey(1) & 0xFF == ord(' '):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+#     # results = model.predict(source=0, show=True, tracker="bytetrack.yaml")
+
 if __name__ == "__main__":
     #preTrain()
     #train()
     #results()
-    #predict()
     track()
-    
-    
