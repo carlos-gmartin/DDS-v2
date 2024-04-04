@@ -1,13 +1,6 @@
 import cv2
-import math
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
-
-# Constants
-# Distance from camera to object (drone) measured in centimeters
-KNOWN_DISTANCE = 100
-# Width of the drone in the real world measured in centimeters
-KNOWN_WIDTH = 30
 
 # Focal length finder function
 def focal_length(measured_distance, real_width, width_in_rf_image):
@@ -27,13 +20,10 @@ def distance_finder(focal_length, real_width, width_in_frame):
     distance = (real_width * focal_length) / width_in_frame
     return distance / 100  # Convert from centimeters to meters
 
-def main():
-    # Load custom YOLO model
-    custom_model = "./runs/detect/train4/weights/best.pt"
-    model = YOLO(custom_model)
+def track(custom_model, drone_width_pixels, KNOWN_DISTANCE, KNOWN_WIDTH, RESOLUTION_WIDTH, RESOLUTION_HEIGHT):
 
-    # Measure drone width in pixels
-    drone_width_pixels = 490  # Replace with your measured width
+    # Loading pretrained model.
+    model = YOLO(custom_model)
 
     # Estimate focal length in pixels
     focal_length_value = focal_length(KNOWN_DISTANCE, KNOWN_WIDTH, drone_width_pixels)
@@ -44,15 +34,13 @@ def main():
     cap = cv2.VideoCapture(0)
     
     # Set desired resolution
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 2560)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1440)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION_WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION_HEIGHT)
 
-    print("============ Opened OpenCV ============")
+    print("============ Opened OpenCV and model ============")
     
     while True:
         _, img = cap.read()
-        
-        print(" ============ Opened MODEL ============")
         # BGR to RGB conversion is performed under the hood
         results = model.predict(img, tracker="bytetrack.yaml")
 
@@ -86,4 +74,23 @@ def main():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main()
+    
+    # Constants for testing (DEFAULT VARIABLES)
+    KNOWN_DISTANCE = 100 # Distance from camera to object (drone) measured in centimeters 
+    KNOWN_WIDTH = 30 # Width of the drone in the real world measured in centimeters
+
+    # Camera resolution
+    RESOLUTION_WIDTH = 2560
+    RESOLUTION_HEIGHT = 1440
+
+    # Measured drone width using camera calibration
+    drone_width_pixels = 490  # pixels
+
+    # Load custom YOLO model
+    custom_model = "../model/detect/train4/weights/best.pt"
+
+    # Running the model.
+    try:
+        track(custom_model, drone_width_pixels, KNOWN_DISTANCE, KNOWN_WIDTH, RESOLUTION_WIDTH, RESOLUTION_HEIGHT)
+    except:
+        print("Error running the distance tracking.") 

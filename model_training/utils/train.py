@@ -13,12 +13,12 @@ def train():
     class_map = dict(zip(M, names))
     
     # Define the command as a string
-    model = YOLO("yolov8n.pt") 
+    model = YOLO("../yolov8n.pt") 
     model.train(data="data.yaml", epochs=20, imgsz=640, workers=8, batch=16,save_period=10)
     
 def results():
     paths2 = []
-    for dirname, _, filenames in os.walk('./runs/detect/train'):
+    for dirname, _, filenames in os.walk('../runs/detect/train4'):
         for filename in filenames:
             if filename[-4:]=='.jpg':
                 paths2+=[(os.path.join(dirname, filename))]

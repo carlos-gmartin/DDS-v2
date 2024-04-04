@@ -11,9 +11,9 @@ import yaml
 
 # Define the data to be written to the YAML file
 data_yaml = dict(
-    train ='../datasets/train',
-    val ='../datasets/valid',
-    test='../datasets/test',
+    train ='../../datasets/train',
+    val ='../../datasets/valid',
+    test='../../datasets/test',
     nc =1,
     names =['drone']
 )
