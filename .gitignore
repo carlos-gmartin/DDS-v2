@@ -1,0 +1,9 @@
+# Testing Videos
+
+/model_training/test
+
+# Ignoring model things. Kinda too large for github.
+
+/model_training/yolov8n.pt
+/model_training/datasets
+/model_training/archive
