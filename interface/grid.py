@@ -58,9 +58,9 @@ def add_dot(x, y, angle):
     pt1 = (width // 2, height)  # Center of the radar grid
     pt2 = (x, y)  # Coordinates of the clicked point
     # Draw a circle at the clicked point
-    cv2.circle(img, center=pt2, radius=5, color=[8,255,8], thickness=-1)
+    cv2.circle(img, center=pt2, radius=5, color=[0, 0, 250], thickness=-1)
     # Draw a line from the center to the clicked point
-    cv2.line(img, pt1=pt1, pt2=pt2, color=[8,255,8], thickness=1)
+    # cv2.line(img, pt1=pt1, pt2=pt2, color=[8,255,8], thickness=1)
     # Show the updated radar grid
     cv2.imshow('Radar', img)
     # Append the point coordinates to the list
@@ -103,7 +103,7 @@ def add_drone(distance, angle):
     # Append the new drone coordinates to the list
     drone_coordinates.append(pt2)
 
-    print(f"Added drone at ({x}, {y}), Angle: {angle}")
+    #print(f"Added drone at ({x}, {y}), Angle: {angle}")
 
 def on_mouse(event, x, y, flags, param):
     """
@@ -126,6 +126,10 @@ def run_project(get_drone_params):
     # Load the example grid image
     img = cv2.imread('example_grid.jpg')
 
+    # Set mouse callback function
+    cv2.namedWindow('Radar')
+    cv2.setMouseCallback('Radar', on_mouse)
+
     for base_angle in range(90, 300, 30):
         pt1 = (width // 2 + int(350 * np.sin(np.radians(base_angle))), height + int(350 * np.cos(np.radians(base_angle))))
         cv2.line(img, pt1=pt1, pt2=(width // 2, height), color=[0, 255, 0], thickness=2)
@@ -146,7 +150,7 @@ def run_project(get_drone_params):
     # Display the radar grid and allow manual dot addition
     cv2.imshow('Radar',img)
 
-    for distance, angle in get_drone_params():
+    for distance, angle in get_drone_params:
         add_drone(distance, angle)
 
         # Check for user input
@@ -157,14 +161,14 @@ def run_project(get_drone_params):
     cv2.destroyAllWindows()
 
 
-# Testing the function
-if __name__ == "__main__":
-    # Example function to get drone parameters (distance, angle)
-    def get_drone_params():
-        for distance in range(0, 1000, 10):
-            angle = -70  # Constant angle
-            yield (distance, angle)
+# # Testing the function
+# if __name__ == "__main__":
+#     # Example function to get drone parameters (distance, angle)
+#     def get_drone_params():
+#         for distance in range(0, 1000, 10):
+#             angle = -70  # Constant angle
+#             yield (distance, angle)
 
-    # To run the grid system.
-    run_project(get_drone_params)
+#     # To run the grid system.
+#     run_project(get_drone_params)
 
