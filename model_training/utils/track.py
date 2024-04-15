@@ -88,6 +88,9 @@ def track(custom_model, drone_width_pixels, KNOWN_DISTANCE, KNOWN_WIDTH, RESOLUT
     
     while True:
         _, img = cap.read()
+        # Rotating the image.
+        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    
         # BGR to RGB conversion is performed under the hood
         results = model.predict(img, tracker="bytetrack.yaml")
 
@@ -117,7 +120,7 @@ def track(custom_model, drone_width_pixels, KNOWN_DISTANCE, KNOWN_WIDTH, RESOLUT
         img = annotator.result()  
 
         # Resize the frame to fit the window without changing the window size
-        resized_img = cv2.resize(img, (640, 480))
+        resized_img = cv2.resize(img, (1280, 720))
 
         cv2.imshow('Drone Detection', resized_img)     
 

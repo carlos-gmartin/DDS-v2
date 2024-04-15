@@ -53,13 +53,13 @@ if __name__ == "__main__":
     RESOLUTION_HEIGHT = 1440
 
     # Measured drone width using camera calibration
-    drone_width_pixels = 50  # pixels
+    drone_width_pixels = 150  # pixels
 
     # Load custom YOLO model
     custom_model = "./model/train4/weights/best.pt"
 
-    #video = "./test/test6.mp4"
-    video = 0
+    video = "./test/real_test_new.mp4"
+    #video = 0
 
     # Save tracking file path
     info_file = "../interface/detection_info.txt"
