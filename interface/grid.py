@@ -12,6 +12,8 @@ RADIUS = 100
 # Global variables
 point_coordinates = []
 drone_coordinates = []
+points_added = 0
+squares = []  # List to store coordinates of squares
 
 def pos_angle(base_angle, length):
     """
@@ -54,7 +56,7 @@ def add_dot(x, y, angle):
         y (int): The y-coordinate of the point.
         angle (float): The angle of the point from the center (in degrees).
     """
-    global img
+    global img, points_added, squares
     pt1 = (width // 2, height)  # Center of the radar grid
     pt2 = (x, y)  # Coordinates of the clicked point
     # Draw a circle at the clicked point
@@ -65,7 +67,39 @@ def add_dot(x, y, angle):
     cv2.imshow('Radar', img)
     # Append the point coordinates to the list
     point_coordinates.append(pt2)
+    points_added += 1
     print(f"Added dot at ({x}, {y}), Angle: {angle}")
+
+    if points_added == 4:
+        # If four points have been added, reset the counter for the next square
+        points_added = 0
+        print("Square complete")
+        # Extract the coordinates of the square
+        square_coordinates = point_coordinates[-4:]
+        # Draw the no-fly zone square
+        add_no_fly_zone(square_coordinates)
+        for i in range(0, len(squares)):
+            print(f"Added Square {squares[i]}")
+
+def add_no_fly_zone(square_coordinates):
+    """
+    Create a square around the drawn points to define a no-fly zone.
+    """
+    global img
+
+    # Find the minimum and maximum x and y coordinates of the drawn points
+    min_x = min(square_coordinates, key=lambda x: x[0])[0]
+    max_x = max(square_coordinates, key=lambda x: x[0])[0]
+    min_y = min(square_coordinates, key=lambda x: x[1])[1]
+    max_y = max(square_coordinates, key=lambda x: x[1])[1]
+
+    # Add points to define the square
+    square_points = [(min_x, min_y), (min_x, max_y), (max_x, max_y), (max_x, min_y)]
+    squares.append(square_points)  # Save the coordinates of the square
+
+    # Draw the square on the grid
+    cv2.polylines(img, [np.array(square_points)], isClosed=True, color=(0, 0, 255), thickness=2)
+    cv2.imshow('Radar', img)
 
 def add_drone(distance, angle):
     """
@@ -119,6 +153,9 @@ def on_mouse(event, x, y, flags, param):
     # If the left mouse button is pressed, add a dot to the radar grid
     if event == cv2.EVENT_LBUTTONDOWN:
         add_dot(x, y, np.arctan2(y - height, x - (width // 2)) * 180 / np.pi)
+    # If the right mouse button is pressed, define the no-fly zone
+    elif event == cv2.EVENT_RBUTTONDOWN:
+        add_no_fly_zone()
 
 def run_project(get_drone_params):
     global img
@@ -161,14 +198,13 @@ def run_project(get_drone_params):
     cv2.destroyAllWindows()
 
 
-# # Testing the function
-# if __name__ == "__main__":
-#     # Example function to get drone parameters (distance, angle)
-#     def get_drone_params():
-#         for distance in range(0, 1000, 10):
-#             angle = -70  # Constant angle
-#             yield (distance, angle)
+# Testing the function
+if __name__ == "__main__":
+    # Example function to get drone parameters (distance, angle)
+    def get_drone_params():
+        for distance in range(0, 1000, 10):
+            angle = -70  # Constant angle
+            yield (distance, angle)
 
-#     # To run the grid system.
-#     run_project(get_drone_params)
-
+    # To run the grid system.
+    run_project(get_drone_params)
