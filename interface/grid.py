@@ -1,5 +1,7 @@
-import numpy as np
 import cv2
+import numpy as np
+import os
+import time
 
 # Set the width and height of the radar grid
 width = 1335
@@ -101,6 +103,28 @@ def add_no_fly_zone(square_coordinates):
     cv2.polylines(img, [np.array(square_points)], isClosed=True, color=(0, 0, 255), thickness=2)
     cv2.imshow('Radar', img)
 
+def check_no_fly_zone(drone_coordinates):
+    """
+    Check if the drone is in the no-fly zone.
+
+    Parameters:
+        drone_coordinates (tuple): The coordinates (x, y) of the drone.
+
+    Returns:
+        bool: True if the drone is in the no-fly zone, False otherwise.
+    """
+    for square in squares:
+        min_x = min(square, key=lambda x: x[0])[0]
+        max_x = max(square, key=lambda x: x[0])[0]
+        min_y = min(square, key=lambda x: x[1])[1]
+        max_y = max(square, key=lambda x: x[1])[1]
+
+        # Check if drone coordinates fall within the square boundaries
+        if min_x <= drone_coordinates[0] <= max_x and min_y <= drone_coordinates[1] <= max_y:
+            return True  # Drone is in the no-fly zone
+
+    return False  # Drone is not in the no-fly zone
+
 def add_drone(distance, angle):
     """
     Add a single drone at the specified distance and angle from the center of the radar grid.
@@ -114,13 +138,31 @@ def add_drone(distance, angle):
     x = width // 2 + int(distance / 20 * RADIUS * np.cos(np.radians(angle)))  # Calculate x coordinate
     y = height - int(distance / 20 * RADIUS * np.sin(np.radians(angle)))  # Calculate y coordinate (adjust for alignment)
 
+    # Check if the drone is in the no-fly zone
+    in_no_fly_zone = check_no_fly_zone((x, y))
+
     # Draw the new drone on the radar grid
     pt1 = (width // 2, height)  # Center of the radar grid
     pt2 = (x, y)  # Coordinates of the drone
-    cv2.circle(img_copy, center=pt2, radius=5, color=[50, 50, 50], thickness=-1)  # Draw a circle at the drone position
-    cv2.line(img_copy, pt1=pt1, pt2=pt2, color=[50, 50, 50], thickness=1)  # Draw a line from the center to the drone position
 
-    # Draw a green rectangle around the drone
+    if in_no_fly_zone:
+        # If the drone is in the no-fly zone, draw it in red and display a warning message
+        color = [0, 0, 255]  # Red color
+
+        # Display the warning message above the drone
+        warning_text = "WARNING: Drone in No-Fly Zone!"
+        text_size = cv2.getTextSize(warning_text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+        text_x = x - text_size[0] // 2
+        text_y = y - 20  # Adjust this value to set the vertical position of the warning message
+        cv2.putText(img_copy, warning_text, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+    else:
+        # If the drone is not in the no-fly zone, draw it in gray
+        color = [50, 50, 50]  # Gray color
+
+    cv2.circle(img_copy, center=pt2, radius=5, color=color, thickness=-1)  # Draw a circle at the drone position
+    cv2.line(img_copy, pt1=pt1, pt2=pt2, color=color, thickness=1)  # Draw a line from the center to the drone position
+
+    # Rectangle
     box_size = 20  # Size of the box
     pt1_rect = (x - box_size // 2, y - box_size // 2)  # Top-left corner of the rectangle
     pt2_rect = (x + box_size // 2, y + box_size // 2)  # Bottom-right corner of the rectangle
@@ -136,8 +178,6 @@ def add_drone(distance, angle):
 
     # Append the new drone coordinates to the list
     drone_coordinates.append(pt2)
-
-    #print(f"Added drone at ({x}, {y}), Angle: {angle}")
 
 def on_mouse(event, x, y, flags, param):
     """
@@ -157,11 +197,11 @@ def on_mouse(event, x, y, flags, param):
     elif event == cv2.EVENT_RBUTTONDOWN:
         add_no_fly_zone()
 
-def run_project(get_drone_params):
+def start_grid(example_img):
     global img
 
     # Load the example grid image
-    img = cv2.imread('example_grid.jpg')
+    img = cv2.imread(example_img)
 
     # Set mouse callback function
     cv2.namedWindow('Radar')
@@ -184,27 +224,72 @@ def run_project(get_drone_params):
     for n, i in enumerate(range(0, 1000, 100)):
         cv2.putText(img, f'{20*(n+1)}m', org=pos_angle(90, 50+i), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.5,color=(0, 255, 0), thickness=1)
 
-    # Display the radar grid and allow manual dot addition
     cv2.imshow('Radar',img)
 
-    for distance, angle in get_drone_params:
-        add_drone(distance, angle)
+def run_radar_project(image, detection_file):
+    global img
 
-        # Check for user input
-        key = cv2.waitKey(100)
+    # Start default grid.
+    start_grid(image)
+    
+    # Restarting the count
+    index = 0 
+
+    # Read drone parameters from the file
+    drone_params_generator = get_drone_params(index, detection_file)
+
+    while True:
+        drone_params_generator = get_drone_params(index, detection_file)
+        while True:
+            # Check if the detection file exists
+            if os.path.exists(detection_file):
+                try:
+                    # Attempt to get the next drone parameters
+                    distance, angle = next(drone_params_generator)
+                    add_drone(distance, angle)
+                    index += 1
+                except StopIteration:
+                    # If there are no more drone parameters, wait for a while before checking again
+                    print("No more drone parameters. Waiting for new ones...")
+                    time.sleep(5)  # Adjust the delay time as needed
+                    break  # Exit the inner loop to reset the timer and try again
+            else:
+                # If the detection file doesn't exist, wait for a while before checking again
+                print("Detection file not found. Waiting for it to be created...")
+                time.sleep(1)  # Adjust the delay time as needed
+                break  # Exit the inner loop to reset the timer and try again
+
+            # Check for user input
+            key = cv2.waitKey(100)
+            if key == 27:  # Exit on ESC key
+                break  # Exit the inner loop and stop the program
+
         if key == 27:  # Exit on ESC key
-            break
+            break  # Exit the outer loop and stop the program
 
     cv2.destroyAllWindows()
 
+def get_drone_params(start_index, file_path):
+    """
+    Read drone parameters from a file.
 
-# Testing the function
-if __name__ == "__main__":
-    # Example function to get drone parameters (distance, angle)
-    def get_drone_params():
-        for distance in range(0, 1000, 10):
-            angle = -70  # Constant angle
-            yield (distance, angle)
+    Parameters:
+        start_index (int): The line number to start reading from.
+        file_path (str): The path to the file containing drone parameters.
 
-    # To run the grid system.
-    run_project(get_drone_params)
+    Yields:
+        tuple: A tuple containing distance and angle of each drone.
+    """
+
+    with open(file_path, 'r') as file:
+        current_line = 0
+        for line in file:
+            if current_line >= start_index:
+                parts = line.strip().split(',')
+                distance = float(parts[1].split(':')[1].strip().split()[0])  # Extract distance from line
+                angle = float(parts[2].split(':')[1].strip().split()[0])  # Extract angle from line
+                yield distance, angle  # Yield the drone parameters one by one
+            current_line += 1
+
+# # Run the radar project
+# run_radar_project("example_grid", "detection_info.txt")
