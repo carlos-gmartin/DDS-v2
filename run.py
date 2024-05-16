@@ -279,6 +279,12 @@ def run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLU
     # Start the radar grid
     start_grid(radar_image)
 
+    # While loop for audio detection. 
+
+    # If the drone audio is detected, run the project:
+
+    
+
     # Initialize the object detection model
     model = YOLO(custom_model)
 
@@ -296,7 +302,7 @@ def run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLU
 
     while True:
         _, img = cap.read()
-        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        #img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         # Perform object detection using YOLO
         results = model.predict(img, tracker="bytetrack.yaml")
@@ -343,12 +349,13 @@ if __name__ == "__main__":
 
     # Initialize the object detection model
     custom_model = "./model_training/model/train4/weights/best.pt"  # Pretrained YOLO model
-    video = "./model_training/test/real_test_new.mp4"
+    #video = "./model_training/test/real_test_new.mp4"
+    video = 0
     radar_image = "radar_example.jpg"
 
     # Camera resolution
-    RESOLUTION_WIDTH = 2560
-    RESOLUTION_HEIGHT = 1440
+    RESOLUTION_WIDTH = 1080	
+    RESOLUTION_HEIGHT = 1920
 
     # Constants for testing (DEFAULT VARIABLES)
     KNOWN_DISTANCE = 100 # Distance from camera to object (drone) measured in centimeters 
