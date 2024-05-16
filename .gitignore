@@ -7,6 +7,3 @@
 /model_training/yolov8n.pt
 /model_training/datasets
 /model_training/archive
-
-/sound/DroneAudioDataset/
-/sound/mfccDataset/

@@ -1,47 +1,33 @@
 import numpy as np
+import librosa
 import os
-import librosa as lib
-import matplotlib.pyplot as plt
 
-def extract_file_name(path):
-    """
-    Extract the base file name from a given path.
-    """
-    return os.path.basename(path)
+def extract_features(file_name):
+    try:
+        audio, sample_rate = librosa.load(file_name, res_type='kaiser_fast')
+        mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
+        mfccs_scaled = np.mean(mfccs.T, axis=0)
+        return mfccs_scaled
+    except Exception as e:
+        print(f"Error encountered while parsing file: {file_name}")
+        print(f"Exception details: {str(e)}")
+        return None
 
-def process(audio_file, save_path):
-    """
-    Process an audio file and save the extracted MFCC features.
-    """
-    # Load audio file
-    y, sr = lib.load(audio_file, sr=None)
+# Path to your dataset
+data_path = "../DroneAudioDataset/"
+labels = ["Drone", "Background"]
 
-    # Extract MFCC features
-    mfcc = lib.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+# Path to save the .npy files
+save_path = "../mfccDataset/"
 
-    # Save feature list into npy
-    mfcc_path = os.path.splitext(audio_file)[0] + '.npy'
-    mfcc_path = extract_file_name(mfcc_path)
-    os.makedirs(save_path, exist_ok=True)
-    np.save(os.path.join(save_path, mfcc_path), mfcc)
-
-    return mfcc_path
-
-def process_directory(directory_path, save_path):
-    """
-    Process all .wav files in a directory and save MFCC features.
-    """
-    num_processed = 0
-    total_files = len([f for f in os.listdir(directory_path) if f.endswith('.wav')])
-    for root, _, files in os.walk(directory_path):
-        for file in files:
-            if file.endswith('.wav'):
-                audio_file_path = os.path.join(root, file)
-                _ = process(audio_file_path, save_path)
-                num_processed += 1
-                print(f"Total Processed: {num_processed}/{total_files} Current File: {audio_file_path}")
-
-if __name__ == '__main__':
-    directory_path = '../DroneAudioDataset/background'
-    save_path = '../mfccDataset'
-    process_directory(directory_path, save_path)
+# Create save_path directory if it doesn't exist
+os.makedirs(save_path, exist_ok=True)
+for label in labels:
+    dir_path = os.path.join(data_path, label)
+    for file_name in os.listdir(dir_path):
+        file_path = os.path.join(dir_path, file_name)
+        feature = extract_features(file_path)
+        if feature is not None:
+            # Construct the filename with label included
+            file_save_path = os.path.join(save_path, f"{label}_{file_name[:-4]}.npy")
+            np.save(file_save_path, feature)
