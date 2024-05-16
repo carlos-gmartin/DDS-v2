@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
+import joblib
 
 # Path to the directory containing MFCC files
 data_path = "./mfccDataset/"
@@ -62,6 +63,8 @@ model.fit(X_train, y_train_encoded, epochs=10, batch_size=32, validation_data=(X
 loss, accuracy = model.evaluate(X_test, y_test_encoded)
 print(f'Test Loss: {loss}, Test Accuracy: {accuracy}')
 
+joblib.dump(model, './saved_model/soundmodelv1.pkl')
+
 # Predict labels for test set
 y_pred_probs = model.predict(X_test)
 y_pred = np.argmax(y_pred_probs, axis=1)
@@ -69,11 +72,11 @@ y_pred = np.argmax(y_pred_probs, axis=1)
 # Create confusion matrix
 cm = confusion_matrix(y_test_encoded, y_pred)
 
-# Plot confusion matrix
 plt.figure(figsize=(8, 6))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False,
             xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_)
 plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
 plt.title('Confusion Matrix')
-plt.show()
+plt.savefig('./saved_model/soundmodelv1-matrix.jpg')  # Saving the plot
+plt.show()  # Displaying the plot
