@@ -4,7 +4,7 @@ import librosa  # Assuming you used librosa for audio processing during training
 import Processing.mfcc as processing
 
 # Define the path to the individual audio file for testing
-new_audio_file = './DroneAudioDataset/Background/Background1.wav'
+new_audio_file = './DroneAudioDataset/drone.wav'
 
 # Call the extract_features function to extract MFCC features
 features = processing.extract_features(new_audio_file)
@@ -24,7 +24,6 @@ features = features.reshape(1, 1, -1)
 
 # Assuming your classes are represented as ['Class A', 'Class B']
 classes = ['Background', 'Drone']
-
 
 # Call the predict method of the model
 prediction = predict_class(loaded_model, features)

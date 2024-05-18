@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
+from sound.audio_handler import AudioHandler  # Import your AudioHandler class
 
 # Set the width and height of the radar grid
 width = 1335
@@ -274,24 +275,27 @@ def angle_from_camera(object_center_x, frame_width):
     return angle
 
 def run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLUTION_HEIGHT, KNOWN_DISTANCE, KNOWN_WIDTH, drone_width_pixels):
-    global img_radar
+    # Adding audio detection.
+    model_path = './sound/saved_model/soundmodelv1.pkl'
+    audio = AudioHandler(model_path)
+    # Searching for drone noise.
+
+    print("==== Searching for drone noise ====")
+
+    audio.start()  # Open the stream
+    audio.mainloop()
 
     # Start the radar grid
     start_grid(radar_image)
-
-    # While loop for audio detection. 
-
-    # If the drone audio is detected, run the project:
-
-    
 
     # Initialize the object detection model
     model = YOLO(custom_model)
 
     # Estimate focal length in pixels
     focal_length_value = focal_length(KNOWN_DISTANCE, KNOWN_WIDTH, drone_width_pixels)
-    
+
     print("Estimated focal length (in pixels):", focal_length_value)
+
     # Initialize video capture
     cap = cv2.VideoCapture(video)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION_WIDTH)
@@ -302,7 +306,6 @@ def run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLU
 
     while True:
         _, img = cap.read()
-        #img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         # Perform object detection using YOLO
         results = model.predict(img, tracker="bytetrack.yaml")
@@ -316,31 +319,32 @@ def run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLU
 
                 # Calculate bounding box width in pixels
                 bounding_box_width_pixels = b[2] - b[0]
-                
+
                 # Estimate distance using focal length and object width
                 estimated_distance_m = distance_finder(focal_length_value, KNOWN_WIDTH, bounding_box_width_pixels)
 
                 # Calculate the angle of the object relative to the camera's position
                 object_center_x = (b[2] + b[0]) / 2  # X-coordinate of the object's center
                 angle = angle_from_camera(object_center_x, RESOLUTION_WIDTH)
-                
+
                 label = f"{model.names[int(c)]}, Distance: {estimated_distance_m:.2f} m, Angle: {angle:.2f} degrees"
                 annotator.box_label(b, label, color=(0, 0, 255))  # Red color in RGB format
 
                 # Add the drone to the radar map
                 add_drone(estimated_distance_m, angle)
-        
-        img = annotator.result()  
+
+        img = annotator.result()
 
         # Resize the frame to fit the window without changing the window size
         resized_img = cv2.resize(img, (1280, 720))
 
-        cv2.imshow('Drone Detection', resized_img)     
+        cv2.imshow('Drone Detection', resized_img)
 
         key = cv2.waitKey(1) & 0xFF
         if key == 27 or key == ord('q'):  # Close windows on ESC or 'q'
             break
 
+    # Release resources
     cap.release()
     cv2.destroyAllWindows()
 
@@ -349,8 +353,8 @@ if __name__ == "__main__":
 
     # Initialize the object detection model
     custom_model = "./model_training/model/train4/weights/best.pt"  # Pretrained YOLO model
-    #video = "./model_training/test/real_test_new.mp4"
-    video = 0
+    video = "./model_training/test/real_test_new.mp4"
+    #video = 0
     radar_image = "radar_example.jpg"
 
     # Camera resolution
