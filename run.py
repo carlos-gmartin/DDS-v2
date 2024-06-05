@@ -3,8 +3,6 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator
 from sound.audio_handler import AudioHandler  # Import your AudioHandler class
-from pydub import AudioSegment
-from pydub.playback import play
 
 # Set the width and height of the radar grid
 width = 1335
@@ -19,38 +17,6 @@ point_coordinates = []
 drone_coordinates = []
 points_added = 0
 squares = []  # List to store coordinates of squares
-
-def play_music():
-    try:
-        # Load the audio file
-        sound = AudioSegment.from_file('./sound/US.wav')
-        
-        # Trim the audio to the first 2 seconds
-        sound = sound[:2000]  # 2000 ms = 2 seconds
-        
-        # Play the audio file
-        play(sound)
-    except Exception as e:
-        print(f"Error playing music: {e}")
-
-def droneWarning():
-    global frame
-    text = "Warning: Drone Detected!"
-
-    play_music()  # Play alert sound
-    
-    # Create a blank image
-    frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-    
-    # Add text to the image
-    cv2.putText(frame, text, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    
-    # Display the image in a window
-    cv2.imshow('Drone Detection Warning', frame)
-
-    # Wait for 5 seconds
-    cv2.waitKey(5000)  
-    cv2.destroyAllWindows()  # Close the window after waiting
 
 def pos_angle(base_angle, length):
     """
@@ -312,14 +278,11 @@ def run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLU
     # Adding audio detection.
     model_path = './sound/saved_model/soundmodelv1.pkl'
     audio = AudioHandler(model_path)
-    # Searching for drone noise.
 
     print("==== Searching for drone noise ====")
 
     audio.start()  # Open the stream
     audio.mainloop()
-
-    droneWarning()
 
     # Start the radar grid
     start_grid(radar_image)
@@ -389,9 +352,9 @@ if __name__ == "__main__":
 
     # Initialize the object detection model
     custom_model = "./model_training/model/train4/weights/best.pt"  # Pretrained YOLO model
-    video = "./model_training/test/real_test_new.mp4"
+    video = "./model_training/test/test2.mp4"
     #video = 0
-    radar_image = "radar_example.jpg"
+    radar_image = "./radar_example.jpg"
 
     # Camera resolution
     RESOLUTION_WIDTH = 1080	
@@ -404,4 +367,4 @@ if __name__ == "__main__":
     # Measured drone width using camera calibration
     drone_width_pixels = 150  # pixels
 
-    run_radar_project(custom_model, "radar_example.jpg", video, RESOLUTION_WIDTH, RESOLUTION_HEIGHT, KNOWN_DISTANCE, KNOWN_WIDTH, drone_width_pixels)
+    run_radar_project(custom_model, radar_image, video, RESOLUTION_WIDTH, RESOLUTION_HEIGHT, KNOWN_DISTANCE, KNOWN_WIDTH, drone_width_pixels)
